@@ -11,6 +11,7 @@ export default function Index() {
         alignItems: "center",
       }}
     >
+      <Text>WebSocket connection status: {connectionStatus}</Text>
       <Text>Camera is not available rip</Text>
     </View>
   );
