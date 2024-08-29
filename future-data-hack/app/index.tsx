@@ -1,4 +1,6 @@
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import Camera from "@/components/camera";
+
 export default function Index() {
   const ws = new WebSocket("http://127.0.0.1:8000/ws");
 
@@ -30,7 +32,7 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>Camera is not available rip</Text>
+      <Camera />
     </View>
   );
 }
