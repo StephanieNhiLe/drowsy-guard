@@ -9,6 +9,7 @@ const MicrophoneComponent = () => {
   const [currentMeter, setCurrentMeter] = useState<number | undefined>(
     undefined
   );
+  const [currentDuration, setCurrentDuration] = useState<number | undefined>(0);
 
   useEffect(() => {
     return () => {
@@ -18,39 +19,44 @@ const MicrophoneComponent = () => {
     };
   }, []);
 
+  useEffect(() => {
+    console.log(currentMeter);
+    // implement a simple VAD (Voice Activity Detection)
+    // when it is lower than a threshold, we can assume that the user is not speaking
+    // talking next to the phone is about like, -25
+    const threshold = -26;
+    if (
+      currentMeter !== undefined &&
+      currentMeter <= threshold &&
+      currentDuration !== undefined
+    ) {
+      // give a buffer of 1 second before stopping the recording
+      let currentSilenceTimeStamp = currentDuration;
+      console.log("current silence timestamp:", currentSilenceTimeStamp);
+      if (silenceTimeStamp !== undefined) {
+        console.log("difference:", currentSilenceTimeStamp - silenceTimeStamp);
+      }
+      if (
+        silenceTimeStamp !== undefined &&
+        currentSilenceTimeStamp - silenceTimeStamp > 1000
+      ) {
+        // stop recording, send the sound snippet to the server through websockets
+        console.log("Sending sound snippet to the server to be transcribed...");
+        stop();
+      } else {
+        // this is the new silence timestamp
+        console.log("updating silence timestamp");
+        silenceTimeStamp = currentSilenceTimeStamp;
+      }
+    }
+  }, [currentMeter]);
+
   let silenceTimeStamp: number | undefined = 0;
-  let soundDetected = false;
 
   async function handleVoiceDetection(data: Audio.RecordingStatus) {
     if (data.isRecording) {
-      // implement a simple VAD (Voice Activity Detection)
-      const metering = data.metering;
-      console.log(metering);
-      setCurrentMeter(metering); // for debugging purposes
-
-      // when it is lower than a threshold, we can assume that the user is not speaking
-      // talking next to the phone is about like, -25
-      const threshold = -26;
-      if (metering !== undefined && metering <= threshold) {
-        // give a buffer of 1 second before stopping the recording
-        let currentSilenceTimeStamp = data.durationMillis;
-        if (
-          silenceTimeStamp !== undefined &&
-          currentSilenceTimeStamp - silenceTimeStamp! > 1000 &&
-          soundDetected
-        ) {
-          // stop recording, send the sound snippet to the server through websockets
-          console.log(
-            "Sending sound snippet to the server to be transcribed..."
-          );
-          await stop();
-        } else {
-          // this is the new silence timestamp
-          silenceTimeStamp = currentSilenceTimeStamp;
-        }
-      } else {
-        soundDetected = true;
-      }
+      setCurrentMeter(data.metering); // for debugging purposes
+      setCurrentDuration(data.durationMillis);
     }
   }
 
@@ -71,7 +77,6 @@ const MicrophoneComponent = () => {
         handleVoiceDetection
       );
       setRecording(recording);
-      soundDetected = false;
       console.log("Recording started");
     } catch (err) {
       console.error("Failed to start recording", err);
