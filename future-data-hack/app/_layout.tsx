@@ -1,9 +1,12 @@
+import { WebsocketProvider } from "@/components/contexts/websocketContext";
 import { Stack } from "expo-router";
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" />
-    </Stack>
+    <WebsocketProvider>
+      <Stack>
+        <Stack.Screen name="index" />
+      </Stack>
+    </WebsocketProvider>
   );
 }
