@@ -1,8 +1,9 @@
+import Camera from "@/components/camera";
 import { Text, View } from "react-native";
 import { useWebsocket } from "@/components/contexts/websocketContext";
 
 export default function Index() {
-  const { sendMessage, lastMessage, connectionStatus } = useWebsocket();
+  const { connectionStatus } = useWebsocket();
   return (
     <View
       style={{
@@ -12,7 +13,7 @@ export default function Index() {
       }}
     >
       <Text>WebSocket connection status: {connectionStatus}</Text>
-      <Text>Camera is not available rip</Text>
+      <Camera />
     </View>
   );
 }
