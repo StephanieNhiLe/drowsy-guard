@@ -22,31 +22,35 @@ const MicrophoneComponent = () => {
   let soundDetected = false;
 
   async function handleVoiceDetection(data: Audio.RecordingStatus) {
-    // implement a simple VAD (Voice Activity Detection)
-    const metering = data.metering;
-    console.log(metering);
-    setCurrentMeter(metering); // for debugging purposes
+    if (data.isRecording) {
+      // implement a simple VAD (Voice Activity Detection)
+      const metering = data.metering;
+      console.log(metering);
+      setCurrentMeter(metering); // for debugging purposes
 
-    // when it is lower than a threshold, we can assume that the user is not speaking
-    // talking next to the phone is about like, -25
-    const threshold = -26;
-    if (metering !== undefined && metering <= threshold) {
-      // give a buffer of 1 second before stopping the recording
-      let currentSilenceTimeStamp = data.durationMillis;
-      if (
-        silenceTimeStamp !== undefined &&
-        currentSilenceTimeStamp - silenceTimeStamp! > 1000 &&
-        soundDetected
-      ) {
-        // stop recording, send the sound snippet to the server through websockets
-        console.log("Sending sound snippet to the server to be transcribed...");
-        await stop();
+      // when it is lower than a threshold, we can assume that the user is not speaking
+      // talking next to the phone is about like, -25
+      const threshold = -26;
+      if (metering !== undefined && metering <= threshold) {
+        // give a buffer of 1 second before stopping the recording
+        let currentSilenceTimeStamp = data.durationMillis;
+        if (
+          silenceTimeStamp !== undefined &&
+          currentSilenceTimeStamp - silenceTimeStamp! > 1000 &&
+          soundDetected
+        ) {
+          // stop recording, send the sound snippet to the server through websockets
+          console.log(
+            "Sending sound snippet to the server to be transcribed..."
+          );
+          await stop();
+        } else {
+          // this is the new silence timestamp
+          silenceTimeStamp = currentSilenceTimeStamp;
+        }
       } else {
-        // this is the new silence timestamp
-        silenceTimeStamp = currentSilenceTimeStamp;
+        soundDetected = true;
       }
-    } else {
-      soundDetected = true;
     }
   }
 
@@ -79,7 +83,7 @@ const MicrophoneComponent = () => {
       console.log("Stopping recording..");
       await recordingState.stopAndUnloadAsync();
       await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
+        allowsRecordingIOS: false,
       });
       const uri = recordingState.getURI();
       setRecording(undefined);

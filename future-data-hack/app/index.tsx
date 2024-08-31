@@ -1,29 +1,10 @@
+import Camera from "@/components/camera";
 import { Text, View } from "react-native";
 import MicrophoneComponent from "@/components/Microphone";
+import { useWebsocket } from "@/components/contexts/websocketContext";
 
 export default function Index() {
-  const ws = new WebSocket("http://127.0.0.1:8000/ws");
-
-  ws.onopen = () => {
-    // connection opened
-    ws.send("something"); // send a message
-  };
-
-  ws.onmessage = (e) => {
-    // a message was received
-    console.log(e.data);
-  };
-
-  ws.onerror = (e) => {
-    // an error occurred
-    console.log(e);
-  };
-
-  ws.onclose = (e) => {
-    // connection closed
-    console.log(e.code, e.reason);
-  };
-
+  const { connectionStatus } = useWebsocket();
   return (
     <View
       style={{
@@ -32,8 +13,9 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>Camera is not available rip</Text>
+      <Text>WebSocket connection status: {connectionStatus}</Text>
       <MicrophoneComponent />
+      <Camera />
     </View>
   );
 }
