@@ -1,4 +1,6 @@
 import { Text, View } from "react-native";
+import MicrophoneComponent from "@/components/Microphone";
+
 export default function Index() {
   const ws = new WebSocket("http://127.0.0.1:8000/ws");
 
@@ -31,6 +33,7 @@ export default function Index() {
       }}
     >
       <Text>Camera is not available rip</Text>
+      <MicrophoneComponent />
     </View>
   );
 }
