@@ -1,6 +1,6 @@
-import React, { LegacyRef, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Text, View, StyleSheet, Button } from "react-native";
-import { CameraView, useCameraPermissions, CameraViewRef } from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { useWebsocket } from "./contexts/websocketContext";
 
 const Camera = () => {
