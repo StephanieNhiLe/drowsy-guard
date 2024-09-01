@@ -2,6 +2,8 @@
 import { Button, Text } from "react-native";
 import { useEffect, useState } from "react";
 import { Audio } from "expo-av";
+import { useWebsocket } from "./contexts/websocketContext";
+import * as FileSystem from "expo-file-system";
 
 const MicrophoneComponent = () => {
   const [recordingState, setRecording] = useState<Audio.Recording>();
@@ -10,6 +12,9 @@ const MicrophoneComponent = () => {
     undefined
   );
   const [currentDuration, setCurrentDuration] = useState<number | undefined>(0);
+  const [audioBuffer, setAudioBuffer] = useState<string[]>([]);
+
+  const { ws, sendMessage } = useWebsocket();
 
   useEffect(() => {
     return () => {
@@ -41,8 +46,15 @@ const MicrophoneComponent = () => {
         currentSilenceTimeStamp - silenceTimeStamp > 1000
       ) {
         // stop recording, send the sound snippet to the server through websockets
-        console.log("Sending sound snippet to the server to be transcribed...");
-        stop();
+        saveAudioChunk();
+        if (audioBuffer.length > 0) {
+          const chunk = audioBuffer[0];
+          if (chunk) {
+            streamAudio(chunk);
+            // remove the audio from the buffer
+            setAudioBuffer((prevAudioBuffer) => prevAudioBuffer.slice(1));
+          }
+        }
       } else {
         // this is the new silence timestamp
         console.log("updating silence timestamp");
@@ -54,11 +66,16 @@ const MicrophoneComponent = () => {
   let silenceTimeStamp: number | undefined = 0;
 
   async function handleVoiceDetection(data: Audio.RecordingStatus) {
-    if (data.isRecording) {
-      setCurrentMeter(data.metering); // for debugging purposes
-      setCurrentDuration(data.durationMillis);
-    }
+    setCurrentDuration(data.durationMillis);
+    setCurrentMeter(data.metering); // for debugging purposes
   }
+
+  const saveAudioChunk = async () => {
+    // stop to save the audio chunk
+    await stop();
+    // resume recording
+    await start();
+  };
 
   const start = async () => {
     try {
@@ -93,8 +110,76 @@ const MicrophoneComponent = () => {
       const uri = recordingState.getURI();
       setRecording(undefined);
       console.log("Recording stopped and stored at", uri);
+      if (uri) {
+        setAudioBuffer((prevAudioBuffer) => [...prevAudioBuffer, uri]);
+      }
     } else {
       console.log("No recording to stop");
+    }
+  };
+
+  const streamAudio = async (audioUri: string) => {
+    console.log("Streaming audio..");
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not connected!");
+      return;
+    }
+
+    try {
+      // get file info
+      const fileInfo = await FileSystem.getInfoAsync(audioUri);
+
+      if (!fileInfo.exists) {
+        console.error("Audio file not found!");
+        return;
+      }
+
+      // set chunk size
+      const chunkSize = 4096;
+
+      // send file info in chunks
+      const readFileAndSendChunks = async (offset = 0) => {
+        const data = await FileSystem.readAsStringAsync(audioUri, {
+          encoding: FileSystem.EncodingType.Base64,
+          position: offset,
+          length: chunkSize,
+        });
+
+        if (data.length > 0) {
+          // Send the chunk through the WebSocket
+          sendMessage({ data: data, event: "audio" });
+
+          // Read and send the next chunk recursively
+          readFileAndSendChunks(offset + chunkSize);
+        } else {
+          // Signal end of stream (optional)
+          // webSocket.send("EOS"); // Or any other delimiter
+          console.log("Audio stream complete!");
+        }
+      };
+
+      // Start reading and sending chunks
+      readFileAndSendChunks();
+    } catch (error) {
+      console.error("Error streaming audio:", error);
+    }
+  };
+
+  const playRecentRecorded = async () => {
+    if (audioBuffer.length === 0) {
+      console.log("No audio to play");
+      return;
+    }
+    const sound = new Audio.Sound();
+    try {
+      console.log("Loading sound..");
+      await sound.loadAsync({ uri: audioBuffer[0] });
+      console.log("Playing sound..");
+      await sound.playAsync();
+      // remove the sound from the buffer
+      setAudioBuffer((prevAudioBuffer) => prevAudioBuffer.slice(1));
+    } catch (err) {
+      console.error("Failed to play sound", err);
     }
   };
 
@@ -105,6 +190,7 @@ const MicrophoneComponent = () => {
         onPress={recordingState ? stop : start}
       />
       <Text>{currentMeter}</Text>
+      <Button title="Play most recent audio" onPress={playRecentRecorded} />
     </>
   );
 };

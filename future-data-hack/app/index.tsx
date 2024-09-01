@@ -13,9 +13,19 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>WebSocket connection status: {connectionStatus}</Text>
-      <MicrophoneComponent />
       <Camera />
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          width: "100%",
+          backgroundColor: "white",
+          padding: 10,
+        }}
+      >
+        <Text>WebSocket connection status: {connectionStatus}</Text>
+        <MicrophoneComponent />
+      </View>
     </View>
   );
 }
