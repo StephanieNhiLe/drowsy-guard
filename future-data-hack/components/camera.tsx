@@ -1,11 +1,33 @@
-import React, { useRef, useState } from "react";
+import React, { LegacyRef, useEffect, useRef, useState } from "react";
 import { Text, View, StyleSheet, Button } from "react-native";
 import { CameraView, useCameraPermissions, CameraViewRef } from "expo-camera";
+import { useWebsocket } from "./contexts/websocketContext";
 
 const Camera = () => {
   const [hasCameraPermission, requestCameraPermission] = useCameraPermissions();
-  const cameraRef = useRef<React.RefObject<CameraViewRef | null>>(null);
-  const [isCameraReady, setIsCameraReady] = useState(false);
+  const cameraRef = useRef<CameraView | null>(null);
+  const { sendMessage } = useWebsocket();
+
+  const startCapturingFrames = () => {
+    console.log("Starting to capture frames");
+    const interval = setInterval(async () => {
+      const cameraRefValue = cameraRef.current;
+      if (cameraRefValue) {
+        const photo = await cameraRefValue.takePictureAsync({
+          base64: true,
+        });
+        if (photo && photo.base64) {
+          // console.log(photo.base64);
+          // send the image to the server
+          sendMessage({ data: photo.base64, event: "image" });
+        }
+      } else {
+        console.log("Camera ref is not available");
+      }
+    }, 500); // capture the frame every so often
+
+    return () => clearInterval(interval);
+  };
 
   if (!hasCameraPermission) {
     // Camera permissions are loading
@@ -24,29 +46,15 @@ const Camera = () => {
     );
   }
 
-  const onCameraReady = () => {
-    setIsCameraReady(true);
-    startCapturingFrames();
-  };
-
-  const startCapturingFrames = () => {
-    const interval = setInterval(async () => {
-      const cameraRefValue = cameraRef.current;
-      if (cameraRefValue) {
-        const photo = await cameraRefValue.current?.takePicture({
-          base64: true,
-        });
-        if (photo) {
-          console.log(photo.base64);
-        }
-      }
-    }, 1000); // capture the frame every so often
-
-    return () => clearInterval(interval);
-  };
-
   return hasCameraPermission.granted ? (
-    <CameraView style={styles.camera} facing={"front"}></CameraView>
+    <CameraView
+      style={styles.camera}
+      facing={"front"}
+      onCameraReady={() => {
+        startCapturingFrames();
+      }}
+      ref={cameraRef}
+    />
   ) : (
     <Text>Camera is not available rip</Text>
   );
