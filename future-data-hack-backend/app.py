@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 from flask_sock import Sock
 import json
 
+import base64
+from PIL import Image
+from io import BytesIO
+
 from drowsinessDetector import drowsinessDetector
 
 app = Flask(__name__)
@@ -95,11 +99,20 @@ def echo(ws):
             message = json.loads(data)
             event = message.get("event")
             if event == "image":
-                image_data = message.get('data')
-                print("Received image data")
+                image_data_base64 = message.get('data')
+
+                if "data:image" in image_data_base64:
+                    image_data_base64 = image_data_base64.split(",")[1]
+                
+                image_bytes = base64.b64decode(image_data_base64)
+                image_stream = BytesIO(image_bytes)
+                image = Image.open(image_stream).convert("RGB")
+
+                prediction = drowsinessDetector.predict(image)
+
                 ws.send(json.dumps({
-                    "event": 'image_response',
-                    "data": 'Image received successfully'
+                    "event": 'prediction',
+                    "data": prediction
                 }))
             else:
                 ws.send(json.dumps({
