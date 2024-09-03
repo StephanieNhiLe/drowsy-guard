@@ -5,12 +5,24 @@ from deepgram import Deepgram
 import os
 from dotenv import load_dotenv
 
+from flask_sock import Sock
+import json
+
+import base64
+from PIL import Image
+from io import BytesIO
+
+from drowsinessDetector import drowsinessDetector
+
 app = Flask(__name__)
 CORS(app)
 load_dotenv()
 
+sock = Sock(app)
+
 DEEPGRAM_API_KEY = os.getenv('DEEPGRAM_API_KEY')
 deepgram = Deepgram(DEEPGRAM_API_KEY)
+drowsinessDetector = drowsinessDetector()
 
 @app.route('/', methods=['GET'])
 def alive():
@@ -77,7 +89,40 @@ async def transcribe():
             print(f"Error during transcription: {str(e)}")
             return jsonify({'error': 'An error occurred during transcription'}), 500
 
+@sock.route('/ws')
+def echo(ws):
+    while True:
+        data = ws.receive()
+        if not data:
+            break
+        try:
+            message = json.loads(data)
+            event = message.get("event")
+            if event == "image":
+                image_data_base64 = message.get('data')
 
+                if "data:image" in image_data_base64:
+                    image_data_base64 = image_data_base64.split(",")[1]
+                
+                image_bytes = base64.b64decode(image_data_base64)
+                image_stream = BytesIO(image_bytes)
+                image = Image.open(image_stream).convert("RGB")
 
+                prediction = drowsinessDetector.predict(image)
+
+                ws.send(json.dumps({
+                    "event": 'prediction',
+                    "data": prediction
+                }))
+            else:
+                ws.send(json.dumps({
+                    'event': 'error', 
+                    'data': 'Unknown event type'
+                }))
+        except Exception as e:
+            ws.send(json.dumps({
+                'event': 'error',
+                'data': f'Error processing data: {str(e)}'
+            }))
 if __name__ == '__main__':
     app.run(debug=True)
