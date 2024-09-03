@@ -14,7 +14,7 @@ const MicrophoneComponent = () => {
   const [currentDuration, setCurrentDuration] = useState<number | undefined>(0);
   const [audioBuffer, setAudioBuffer] = useState<string[]>([]);
 
-  const { ws, sendMessage } = useWebsocket();
+  const { ws, sendMessage, deviceUUID } = useWebsocket();
 
   useEffect(() => {
     return () => {
@@ -138,7 +138,8 @@ const MicrophoneComponent = () => {
       const chunkSize = 4096;
 
       // send file info in chunks
-      const readFileAndSendChunks = async (offset = 0) => {
+      // implement some sort of ID so that we could possibly attach the chunks to an order
+      const readFileAndSendChunks = async (offset = 0, chunkIndex = 0) => {
         const data = await FileSystem.readAsStringAsync(audioUri, {
           encoding: FileSystem.EncodingType.Base64,
           position: offset,
@@ -147,13 +148,24 @@ const MicrophoneComponent = () => {
 
         if (data.length > 0) {
           // Send the chunk through the WebSocket
+          // TODO: if the server needs a device UUID to attach chunks to a session, send it by adding "deviceUUID" to the data object
+          // did not implement because it is a breaking change to the backend
+          /*
+          sendMessage({
+            data: JSON.stringify({
+              audioChunkData: data,
+              deviceUUID: deviceUUID,
+            }),
+            event: "audio",
+          });
+          */
           sendMessage({ data: data, event: "audio" });
 
           // Read and send the next chunk recursively
-          readFileAndSendChunks(offset + chunkSize);
+          readFileAndSendChunks(offset + chunkSize, chunkIndex++);
         } else {
-          // Signal end of stream (optional)
-          // webSocket.send("EOS"); // Or any other delimiter
+          // signal end of stream
+          sendMessage({ data: "EOS", event: "audio" });
           console.log("Audio stream complete!");
         }
       };
