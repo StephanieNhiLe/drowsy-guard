@@ -19,7 +19,7 @@ type WebSocketContextType = {
   ws: WebSocket | null;
   sendMessage: (message: WebsocketMessage) => void;
   connectionStatus: string;
-  lastMessage: string | null;
+  lastMessage: WebsocketMessage | null;
   deviceUUID: string;
 };
 
@@ -30,7 +30,7 @@ const WebSocketContext = createContext<WebSocketContextType | undefined>(
 const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [lastMessage, setLastMessage] = useState<WebsocketMessage | null>(null);
   const [deviceUUID, _] = useState(uuid.v4() as string);
 
   useEffect(() => {
@@ -45,7 +45,13 @@ const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
     };
 
     websocket.onmessage = (e) => {
-      setLastMessage(e.data);
+      const data = JSON.parse(e.data);
+
+      if (isWebsocketMessage(data)) {
+        setLastMessage(data);
+      } else {
+        console.error("Invalid WebSocket message format received:", data);
+      }
       console.log("WebSocket message received:", e.data);
     };
 

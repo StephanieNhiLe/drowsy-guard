@@ -24,11 +24,9 @@ const AudioStreamPlayer = () => {
       const audioString = audioBuffer.toString("base64");
       // save the audioBuffer to a file to be played
       const fileURI = FileSystem.cacheDirectory + `${uuid.v4()}.mp3`;
-      const newAudioChunk = FileSystem.writeAsStringAsync(
-        fileURI,
-        audioString,
-        { encoding: FileSystem.EncodingType.Base64 }
-      )
+      FileSystem.writeAsStringAsync(fileURI, audioString, {
+        encoding: FileSystem.EncodingType.Base64,
+      })
         .then(() => {
           // add the file url to the audio queue
           setAudioQueue((prevAudioQueue) => [...prevAudioQueue, fileURI]);
