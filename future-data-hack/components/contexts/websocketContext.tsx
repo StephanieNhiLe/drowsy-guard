@@ -1,15 +1,26 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import uuid from "react-native-uuid";
 
 type WebsocketMessage = {
   event: string;
   data: string;
 };
 
+export function isWebsocketMessage(obj: any): obj is WebsocketMessage {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof obj.event === "string" &&
+    typeof obj.data === "string"
+  );
+}
+
 type WebSocketContextType = {
   ws: WebSocket | null;
   sendMessage: (message: WebsocketMessage) => void;
   connectionStatus: string;
-  lastMessage: string | null;
+  lastMessage: WebsocketMessage | null;
+  deviceUUID: string;
 };
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
@@ -19,11 +30,13 @@ const WebSocketContext = createContext<WebSocketContextType | undefined>(
 const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [lastMessage, setLastMessage] = useState<WebsocketMessage | null>(null);
+  const [deviceUUID, _] = useState(uuid.v4() as string);
 
   useEffect(() => {
     // const websocketURL = "wss://ws.ifelse.io"; // this url is to test whether the websocket can connect to a random server meant for testing
     const websocketURL = "ws://127.0.0.1:8000/ws"; // this will connect to our websocket server
+    // generate a device UUID
     const websocket = new WebSocket(websocketURL);
 
     websocket.onopen = () => {
@@ -32,7 +45,13 @@ const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
     };
 
     websocket.onmessage = (e) => {
-      setLastMessage(e.data);
+      const data = JSON.parse(e.data);
+
+      if (isWebsocketMessage(data)) {
+        setLastMessage(data);
+      } else {
+        console.error("Invalid WebSocket message format received:", data);
+      }
       console.log("WebSocket message received:", e.data);
     };
 
@@ -63,7 +82,7 @@ const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
 
   return (
     <WebSocketContext.Provider
-      value={{ ws, sendMessage, connectionStatus, lastMessage }}
+      value={{ ws, sendMessage, connectionStatus, lastMessage, deviceUUID }}
     >
       {children}
     </WebSocketContext.Provider>

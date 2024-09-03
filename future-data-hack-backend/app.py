@@ -12,8 +12,9 @@ import base64
 from PIL import Image
 from io import BytesIO
 
-from drowsinessDetector import drowsinessDetector
+from drowsinessDetector import drowsinessDetector 
 from DrowsinessCustomModel import DrowsinessModel
+import google.generativeai as genai
 
 app = Flask(__name__)
 CORS(app)
@@ -24,7 +25,6 @@ sock = Sock(app)
 DEEPGRAM_API_KEY = os.getenv('DEEPGRAM_API_KEY')
 deepgram = Deepgram(DEEPGRAM_API_KEY)
 drowsinessDetector = drowsinessDetector()
-drowsinessDetectorCustomModel = DrowsinessModel()
 
 @app.route('/', methods=['GET'])
 def alive():
@@ -99,5 +99,74 @@ def echo(ws):
                 'event': 'error',
                 'data': f'Error processing data: {str(e)}'
             }))
+
+# Basic LLM Chat
+@sock.route('/llm')
+def llm_convo(ws):
+    while True:
+        data = ws.receive()
+        if not data:
+            break
+        try:  
+            user_input = data.strip() 
+            if not user_input: 
+                ws.send('No prompt provided') 
+                continue 
+
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(user_input)
+            llm_reply = response.text.strip()
+ 
+            ws.send(llm_reply) 
+        except json.JSONDecodeError: 
+            ws.send('Invalid JSON format')
+        except Exception as e: 
+            ws.send(f'Error processing data: {str(e)}')
+
+# LLM response to Driver's audio - In progress
+@sock.route('/llm-driver')
+async def llm_convo_driver(ws):
+    while True:
+        data = ws.receive()
+        if not data:
+            break
+        try: 
+            audio_data = base64.b64decode(data) 
+            source = {'buffer': audio_data, 'mimetype': 'audio/mp3'}
+            options = {
+                'model': 'nova-2',
+                'smart_format': True,
+                'summarize': 'v2',
+            }
+ 
+            response = await deepgram.transcription.prerecorded(source, options)
+            transcript = response['results']['channels'][0]['alternatives'][0]['transcript']
+
+            model = genai.GenerativeModel("gpt-3.5-turbo")
+            llm_response = model.generate_content(transcript)
+            response_text = llm_response.text.strip()
+
+            audio_response = await text_to_speech(response_text)
+
+            ws.send(audio_response)
+        except Exception as e:
+            ws.send(f'Error processing data: {str(e)}')
+
+async def text_to_speech(text):
+    try: 
+        tts_options = {
+            'text': text,
+            'voice': 'en-US-Wavenet-D', 
+            'model': 'general',  
+            'punctuate': True, 
+        }
+ 
+        response = await deepgram.tts.synthesize(tts_options)
+
+        return response.content  
+    except Exception as e:
+        print(f"Error during text-to-speech conversion: {str(e)}")
+        return None
+
 if __name__ == '__main__':
     app.run(debug=True)
