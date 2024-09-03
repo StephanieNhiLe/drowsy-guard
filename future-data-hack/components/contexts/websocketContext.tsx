@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import uuid from "react-native-uuid";
 
 type WebsocketMessage = {
   event: string;
@@ -10,6 +11,7 @@ type WebSocketContextType = {
   sendMessage: (message: WebsocketMessage) => void;
   connectionStatus: string;
   lastMessage: string | null;
+  deviceUUID: string;
 };
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
@@ -20,10 +22,12 @@ const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [deviceUUID, _] = useState(uuid.v4() as string);
 
   useEffect(() => {
     // const websocketURL = "wss://ws.ifelse.io"; // this url is to test whether the websocket can connect to a random server meant for testing
     const websocketURL = "ws://127.0.0.1:8000/ws"; // this will connect to our websocket server
+    // generate a device UUID
     const websocket = new WebSocket(websocketURL);
 
     websocket.onopen = () => {
@@ -63,7 +67,7 @@ const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
 
   return (
     <WebSocketContext.Provider
-      value={{ ws, sendMessage, connectionStatus, lastMessage }}
+      value={{ ws, sendMessage, connectionStatus, lastMessage, deviceUUID }}
     >
       {children}
     </WebSocketContext.Provider>
