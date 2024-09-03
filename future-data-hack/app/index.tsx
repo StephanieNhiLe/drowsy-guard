@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import MicrophoneComponent from "@/components/Microphone";
 import { useWebsocket } from "@/components/contexts/websocketContext";
 import AudioStreamPlayer from "@/components/AudioStreamPlayer";
+import DrowsinessMeter from "@/components/DrowsinessMeter";
 
 export default function Index() {
   const { connectionStatus } = useWebsocket();
@@ -27,6 +28,7 @@ export default function Index() {
         <Text>WebSocket connection status: {connectionStatus}</Text>
         <MicrophoneComponent />
         <AudioStreamPlayer />
+        <DrowsinessMeter />
       </View>
     </View>
   );
