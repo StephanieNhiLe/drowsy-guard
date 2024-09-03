@@ -6,6 +6,15 @@ type WebsocketMessage = {
   data: string;
 };
 
+export function isWebsocketMessage(obj: any): obj is WebsocketMessage {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof obj.event === "string" &&
+    typeof obj.data === "string"
+  );
+}
+
 type WebSocketContextType = {
   ws: WebSocket | null;
   sendMessage: (message: WebsocketMessage) => void;
