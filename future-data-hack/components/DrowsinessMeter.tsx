@@ -12,7 +12,7 @@ const DrowsinessMeter = () => {
     if (
       lastMessage &&
       isWebsocketMessage(lastMessage) &&
-      lastMessage.event === "drowsiness"
+      lastMessage.event === "prediction"
     ) {
       const drowsinessLevel = lastMessage.data;
       console.log("Received drowsiness level:", drowsinessLevel);
