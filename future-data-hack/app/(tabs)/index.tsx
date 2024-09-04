@@ -37,7 +37,7 @@ export default function Home() {
           width: "100%",
           backgroundColor: "white",
           padding: 10,
-          paddingBottom: 40,
+          paddingBottom: 10,
           justifyContent: "space-around",
           alignItems: "center",
         }}
