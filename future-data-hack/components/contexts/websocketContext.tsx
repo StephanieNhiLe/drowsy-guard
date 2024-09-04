@@ -35,7 +35,7 @@ const WebsocketProvider = ({ children }: { children: React.JSX.Element }) => {
 
   useEffect(() => {
     // const websocketURL = "wss://ws.ifelse.io"; // this url is to test whether the websocket can connect to a random server meant for testing
-    const websocketURL = "ws://127.0.0.1:8000/ws"; // this will connect to our websocket server
+    const websocketURL = "ws://127.0.0.1:5000/ws"; // this will connect to our websocket server
     // generate a device UUID
     const websocket = new WebSocket(websocketURL);
 
