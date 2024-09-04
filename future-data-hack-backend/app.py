@@ -25,6 +25,7 @@ sock = Sock(app)
 DEEPGRAM_API_KEY = os.getenv('DEEPGRAM_API_KEY')
 deepgram = Deepgram(DEEPGRAM_API_KEY)
 drowsinessDetector = drowsinessDetector()
+drowsinessDetectorCustomModel = DrowsinessModel()
 
 @app.route('/', methods=['GET'])
 def alive():

@@ -1,3 +1,4 @@
+import os
 import gdown
 import torch
 from PIL import Image
@@ -5,18 +6,19 @@ import torchvision.transforms as transforms
 import torchvision.models as models
 import torch.nn as nn
 
-# Download the model file from Google Drive
-file_id = '1iqCRSMsoqjYbqwmTI4fTAULx7psV5WwE'
-url = f'https://drive.google.com/uc?id={file_id}'
-output = './model/drowsiness_detection_model.pth'
-gdown.download(url, output, quiet=False)
+model_path = './model/drowsiness_detection_model.pth'
+if not os.path.exists(model_path):
+    print(f"Model file not found at {model_path}. Downloading...")
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    file_id = '1iqCRSMsoqjYbqwmTI4fTAULx7psV5WwE'
+    url = f'https://drive.google.com/uc?id={file_id}'
+    gdown.download(url, model_path, quiet=False)
+else:
+    print(f"Model file found at {model_path}.")
 
 class DrowsinessModel:
-    def __init__(self, model_path='./model/drowsiness_detection_model.pth'):
-        # Define the model architecture
+    def __init__(self, model_path=model_path):
         self.model = models.resnet50(weights='IMAGENET1K_V2')
-        
-        # Modify the final layer to match the trained model
         num_features = self.model.fc.in_features
         self.model.fc = nn.Sequential(
             nn.Linear(num_features, 1024),
@@ -28,11 +30,9 @@ class DrowsinessModel:
             nn.Linear(512, 2)
         )
         
-        # Load the saved state_dict
         self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
         self.model.eval()
         
-        # Define transformations
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
@@ -40,10 +40,7 @@ class DrowsinessModel:
         ])
 
     def predict(self, image: Image.Image):
-        # Transform image
         image_tensor = self.transform(image).unsqueeze(0)
-        
-        # Make prediction
         with torch.no_grad():
             outputs = self.model(image_tensor)
             _, predicted = torch.max(outputs, 1)
