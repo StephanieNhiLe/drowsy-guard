@@ -29,8 +29,8 @@ const DrowsinessMeter = () => {
   };
 
   const getAlertColor = (level: number) => {
-    if (level < 3) return styles.greenAlert;
-    if (level < 6) return styles.yellowAlert;
+    if (level === 0) return styles.greenAlert;
+    if (level === 1) return styles.yellowAlert;
     return styles.redAlert;
   };
 
