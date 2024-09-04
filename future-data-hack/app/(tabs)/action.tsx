@@ -4,43 +4,93 @@ import DrowsinessMeter from "@/components/DrowsinessMeter";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
 export default function Action() {
+  const assisstances = [
+    {
+      isrecommended: true,
+      image: "Rest stop",
+      title: "Rest break recommended",
+      distance: "5 miles ahead",
+    },
+    {
+      isrecommended: false,
+      image: "Rest stop",
+      title: "Rest break recommended",
+      distance: "5 miles ahead",
+    },
+  ];
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.profileIcon} />
+    <View style={{ padding: 10 }}>
+      <View style={{ display: "flex", flexDirection: "row", marginBottom: 20 }}>
+        <View
+          style={{
+            height: 50,
+            width: 50,
+            borderRadius: 50,
+            backgroundColor: "grey",
+            marginRight: 10,
+          }}
+        />
         <View>
-          <Text style={styles.headerTitle}>Driver's Assistant</Text>
-          <Text style={styles.subTitle}>Assessing Driver Alertness</Text>
+          <Text style={{ fontWeight: "bold", fontSize: 20 }}>
+            Driver's Assisstant
+          </Text>
+          <Text>Assessing Driver Alertness</Text>
         </View>
       </View>
-
-      {/* Alert Box */}
-      <View style={styles.alertBox}>
-        <View style={styles.alertHeader}>
-          <Icon name="warning" size={20} color="#fff" />
-          <Text style={styles.alertText}>Drowsy Detected</Text>
-        </View>
-        <Text style={styles.alertMessage}>
-          Warning: Early Signs of Fatigue/Distraction
+      <DrowsinessMeter />
+      <View style={{ marginTop: 20 }}>
+        <Text style={{ fontSize: 20, marginBottom: 10 }}>
+          {" "}
+          Nearest Assistance
         </Text>
-        <Text style={styles.alertDetails}>
-          Frequent Yawning, Increased Blink Rate, Difficulty Focusing
-        </Text>
-      </View>
-
-      {/* Nearest Assistance */}
-      <View style={styles.assistanceContainer}>
-        <View style={styles.assistanceBox}>
-          <Text style={styles.assistanceLabel}>Recommended</Text>
-          <Text style={styles.assistanceTitle}>Rest Stop</Text>
-          <Text style={styles.assistanceDetails}>Rest Break Recommended</Text>
-          <Text style={styles.assistanceDistance}>5 miles ahead</Text>
-        </View>
-        <View style={styles.assistanceBox}>
-          <Text style={styles.assistanceTitle}>Gas Station</Text>
-          <Text style={styles.assistanceDetails}>Refuel Needed</Text>
-          <Text style={styles.assistanceDistance}>10 miles ahead</Text>
+        <View style={{ display: "flex", flexDirection: "row" }}>
+          {assisstances.map((as) => {
+            return (
+              <View
+                style={{
+                  borderRadius: 10,
+                  position: "relative",
+                  borderColor: "grey",
+                  width: 200,
+                  height: 300,
+                  borderWidth: 1,
+                  marginRight: 20,
+                  overflow: "hidden",
+                }}
+              >
+                {as.isrecommended && (
+                  <Text
+                    style={{
+                      position: "absolute",
+                      top: 5,
+                      left: 5,
+                      color: "black",
+                      zIndex: 1,
+                    }}
+                  >
+                    Recommended
+                  </Text>
+                )}
+                <View
+                  style={{
+                    backgroundColor: "grey",
+                    height: 200,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text>{as.image}</Text>
+                </View>
+                <View style={{ padding: 10 }}>
+                  <Text style={{ marginBottom: 10 }}>{as.title}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: 400 }}>
+                    {as.distance}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
       </View>
 
@@ -145,6 +195,7 @@ const styles = StyleSheet.create({
   },
   recommendedActions: {
     marginBottom: 20,
+    marginTop: 20,
   },
   actionButton: {
     flexDirection: "row",
