@@ -6,6 +6,7 @@ import DrowsinessMeter from "@/components/DrowsinessMeter";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MicrophoneComponent from "@/components/Microphone";
 import AudioStreamPlayer from "@/components/AudioStreamPlayer";
+import MicrophoneComponent_ALT from "@/components/Microphone_ALT";
 
 export default function Index() {
   const { connectionStatus } = useWebsocket();
@@ -43,7 +44,7 @@ export default function Index() {
       >
         <Text>WebSocket connection status: {connectionStatus}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10}}>
-          <TouchableOpacity onPress={handleMicrophonePress}>
+          {/* <TouchableOpacity onPress={handleMicrophonePress}>
             <Icon 
               name="mic" 
               size={40} 
@@ -59,7 +60,8 @@ export default function Index() {
               color={isAudioPlayerActive ? "blue" : "gray"} 
               style={{ opacity: isAudioPlayerActive ? 1 : 0.5 }}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <MicrophoneComponent_ALT />
         </View>
 
         <DrowsinessMeter />
