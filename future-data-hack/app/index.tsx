@@ -1,12 +1,25 @@
+import React, { useState } from "react";
 import Camera from "@/components/camera";
-import { Text, View } from "react-native";
-import MicrophoneComponent from "@/components/Microphone";
+import { Text, View, TouchableOpacity } from "react-native";
 import { useWebsocket } from "@/components/contexts/websocketContext";
-import AudioStreamPlayer from "@/components/AudioStreamPlayer";
 import DrowsinessMeter from "@/components/DrowsinessMeter";
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import MicrophoneComponent from "@/components/Microphone";
+import AudioStreamPlayer from "@/components/AudioStreamPlayer";
 
 export default function Index() {
   const { connectionStatus } = useWebsocket();
+  const [isMicrophoneActive, setMicrophoneActive] = useState(false);
+  const [isAudioPlayerActive, setAudioPlayerActive] = useState(false);
+
+  const handleMicrophonePress = () => {
+    setMicrophoneActive(!isMicrophoneActive);
+  };
+
+  const handlePlayerPress = () => {
+    setAudioPlayerActive(!isAudioPlayerActive);
+  };
+
   return (
     <View
       style={{
@@ -23,13 +36,37 @@ export default function Index() {
           width: "100%",
           backgroundColor: "white",
           padding: 10,
+          paddingBottom: 40,
+          justifyContent: 'space-around',
+          alignItems: 'center',
         }}
       >
         <Text>WebSocket connection status: {connectionStatus}</Text>
-        <MicrophoneComponent />
-        <AudioStreamPlayer />
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10}}>
+          <TouchableOpacity onPress={handleMicrophonePress}>
+            <Icon 
+              name="mic" 
+              size={40} 
+              color={isMicrophoneActive ? "blue" : "gray"} 
+              style={{ opacity: isMicrophoneActive ? 1 : 0.5 }}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handlePlayerPress}>
+            <Icon 
+              name="play-arrow" 
+              size={40} 
+              color={isAudioPlayerActive ? "blue" : "gray"} 
+              style={{ opacity: isAudioPlayerActive ? 1 : 0.5 }}
+            />
+          </TouchableOpacity>
+        </View>
+
         <DrowsinessMeter />
       </View>
+
+      {isMicrophoneActive && <MicrophoneComponent />}
+      {isAudioPlayerActive && <AudioStreamPlayer />}
     </View>
   );
 }
