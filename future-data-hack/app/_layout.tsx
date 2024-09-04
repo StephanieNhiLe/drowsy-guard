@@ -1,11 +1,11 @@
 import { WebsocketProvider } from "@/components/contexts/websocketContext";
-import { Stack } from "expo-router";
+import { Stack } from "expo-router/stack";
 
-export default function RootLayout() {
+export default function Layout() {
   return (
     <WebsocketProvider>
       <Stack>
-        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </WebsocketProvider>
   );
