@@ -16,6 +16,9 @@ from drowsinessDetector import drowsinessDetector
 from DrowsinessCustomModel import DrowsinessModel
 import google.generativeai as genai
 
+import assemblyai as aai
+import random
+
 app = Flask(__name__)
 CORS(app)
 load_dotenv()
@@ -23,9 +26,20 @@ load_dotenv()
 sock = Sock(app)
 
 DEEPGRAM_API_KEY = os.getenv('DEEPGRAM_API_KEY')
+ASSEMBLY_AI_API_KEY = os.getenv('ASSEMBLY_AI_API_KEY')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
 deepgram = Deepgram(DEEPGRAM_API_KEY)
 drowsinessDetector = drowsinessDetector()
 drowsinessDetectorCustomModel = DrowsinessModel()
+
+aai.settings.api_key = ASSEMBLY_AI_API_KEY
+genai.configure(api_key=GEMINI_API_KEY)
+
+transcriber = aai.Transcriber()
+
+# Initialize an empty conversation history
+conversation_history = []
 
 @app.route('/', methods=['GET'])
 def alive():
@@ -101,57 +115,89 @@ def echo(ws):
                 'data': f'Error processing data: {str(e)}'
             }))
 
-# Basic LLM Chat
-@sock.route('/llm')
-def llm_convo(ws):
-    while True:
-        data = ws.receive()
-        if not data:
-            break
-        try:  
-            user_input = data.strip() 
-            if not user_input: 
-                ws.send('No prompt provided') 
-                continue 
 
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(user_input)
-            llm_reply = response.text.strip()
- 
-            ws.send(llm_reply) 
-        except json.JSONDecodeError: 
-            ws.send('Invalid JSON format')
-        except Exception as e: 
-            ws.send(f'Error processing data: {str(e)}')
+@app.route('/activate-llm', methods=['POST'])
+def activate_llm():
+    try:
+        # Initial prompt to start the conversation
+        initial_prompt = "You are an engaging AI assistant designed to keep drowsy drivers alert through trivia and conversation. Your goal is to ask interesting questions, share fun facts, and maintain an engaging dialogue. Keep your responses concise and energetic. Start with a fun trivia question."
 
-# LLM response to Driver's audio - In progress
-@sock.route('/llm-driver')
-async def llm_convo_driver(ws):
-    while True:
-        data = ws.receive()
-        if not data:
-            break
-        try: 
-            audio_data = base64.b64decode(data) 
-            source = {'buffer': audio_data, 'mimetype': 'audio/mp3'}
-            options = {
-                'model': 'nova-2',
-                'smart_format': True,
-                'summarize': 'v2',
-            }
- 
-            response = await deepgram.transcription.prerecorded(source, options)
-            transcript = response['results']['channels'][0]['alternatives'][0]['transcript']
+        # Process with Gemini
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        llm_response = model.generate_content(initial_prompt)
+        response_text = llm_response.text.strip()
 
-            model = genai.GenerativeModel("gpt-3.5-turbo")
-            llm_response = model.generate_content(transcript)
-            response_text = llm_response.text.strip()
+        # Add AI response to conversation history
+        conversation_history.append(f"AI: {response_text}")
 
-            audio_response = await text_to_speech(response_text)
+        return jsonify({
+            "gemini_response": response_text
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-            ws.send(audio_response)
-        except Exception as e:
-            ws.send(f'Error processing data: {str(e)}')
+@app.route('/llm-drive', methods=['POST'])
+def llm_drive():
+    if 'audio' not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400
+
+    audio_file = request.files['audio']
+
+    try:
+        # Transcribe the audio using AssemblyAI
+        transcript = transcriber.transcribe(audio_file)
+        user_input = transcript.text
+
+        # Add user input to conversation history
+        conversation_history.append(f"Human: {user_input}")
+
+        # Prepare the prompt for Gemini with conversation history and instructions
+        prompt = f"""You are an engaging AI assistant designed to keep drowsy drivers alert through trivia and conversation. Your goal is to ask interesting questions, share fun facts, and maintain an engaging dialogue. Keep your responses concise and energetic.
+
+Here's the conversation so far: {' '.join(conversation_history)}
+
+Now, respond to the user's last input and then do one of the following:
+1. Ask a follow-up question related to the topic.
+2. Share an interesting fact and ask for the user's opinion.
+3. Start a new topic with a trivia question.
+4. Tell a short joke and ask if they've heard a similar one.
+
+Always end your response with a question or prompt to keep the conversation going. Be varied and unpredictable in your approach.
+
+AI: """
+
+        # Process with Gemini
+        model = genai.GenerativeModel("gemini-pro")
+        llm_response = model.generate_content(prompt)
+        response_text = llm_response.text.strip()
+
+        # If the AI doesn't end with a question, add one
+        if not response_text.endswith('?'):
+            follow_up_questions = [
+                "What do you think about that?",
+                "Have you ever experienced something similar?",
+                "Did you know that? What's your take on it?",
+                "What's your favorite topic to discuss while driving?",
+                "If you could instantly learn one new skill, what would it be?",
+                "What's the most interesting place you've ever visited?",
+                "If you could have dinner with any historical figure, who would it be and why?"
+            ]
+            response_text += f" {random.choice(follow_up_questions)}"
+
+        # Add AI response to conversation history
+        conversation_history.append(f"AI: {response_text}")
+
+        # Keep only the last 10 exchanges to maintain a reasonable context window
+        if len(conversation_history) > 20:
+            conversation_history.pop(0)
+            conversation_history.pop(0)
+
+        return jsonify({
+            "transcript": user_input,
+            "gemini_response": response_text
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 async def text_to_speech(text):
     try: 
