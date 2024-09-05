@@ -4,11 +4,8 @@ import { View, Text, StyleSheet } from "react-native";
 
 const DrowsinessMeter = () => {
   const { lastMessage } = useWebsocket();
-  const [drowsinessLevel, setDrowsinessLevel] = useState<
-    number | string | undefined
-  >(0);
+  const [drowsinessLevel, setDrowsinessLevel] = useState<string | undefined>("Non-Drowsy");
 
-  // parse the last message and see if it is incoming audio
   useEffect(() => {
     if (
       lastMessage &&
@@ -17,31 +14,27 @@ const DrowsinessMeter = () => {
     ) {
       const drowsinessLevel = lastMessage.data;
       console.log("Received drowsiness level:", drowsinessLevel);
-      // set the state
       setDrowsinessLevel(drowsinessLevel);
     }
   }, [lastMessage]);
 
-  const getAlertText = (level: number) => {
-    if (level === 0) return "No Warning";
-    if (level === 1) return "Caution";
+  const getAlertText = (level: string) => {
+    if (level === "Non-Drowsy") return "No Warning";
     return "Warning: Drowsiness Detected";
   };
 
-  const getAlertColor = (level: number) => {
-    if (level === 0) return styles.greenAlert;
-    if (level === 1) return styles.yellowAlert;
+  const getAlertColor = (level: string) => {
+    if (level === "Non-Drowsy") return styles.greenAlert;
     return styles.redAlert;
   };
 
   return (
-    <View style={[styles.alertBox, getAlertColor(Number(drowsinessLevel))]}>
-    <Text style={styles.alertText}>{getAlertText(Number(drowsinessLevel))}</Text>
-    <Text style={styles.subText}>
-      {drowsinessLevel === 0 ? "No Drowsy Behaviors Detected" : "Drowsy Behaviors Detected"} 
-    </Text>
-      
-  </View>
+    <View style={[styles.alertBox, getAlertColor(drowsinessLevel ?? "Non-Drowsy")]}>
+      <Text style={styles.alertText}>{getAlertText(drowsinessLevel ?? "Non-Drowsy")}</Text>
+      <Text style={styles.subText}>
+        {drowsinessLevel === "Non-Drowsy" ? "No Drowsy Behaviors Detected" : "Drowsy Behaviors Detected"}
+      </Text>
+    </View>
   );
 };
 
@@ -57,10 +50,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#e6f9e7',
     borderColor: 'green',
   },
-  yellowAlert: {
-    backgroundColor: '#fff5cc',
-    borderColor: '#ffc107',
-  },
   redAlert: {
     backgroundColor: '#f8d7da',
     borderColor: '#dc3545',
@@ -73,6 +62,5 @@ const styles = StyleSheet.create({
     color: '#155724',
   }
 });
-
 
 export default DrowsinessMeter;

@@ -4,3 +4,4 @@ python-dotenv
 deepgram-sdk==2.12.0
 transformers
 flask-sock
+google-generativeai
